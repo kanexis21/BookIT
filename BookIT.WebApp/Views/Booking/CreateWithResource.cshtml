@@ -1,0 +1,72 @@
+﻿@model BookingViewModel
+
+@{
+    ViewData["Title"] = "Создание бронирования";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-danger">@Model.Message</div>
+}
+
+<form asp-action="CreateWithResource" method="post" class="needs-validation">
+    <input type="hidden" asp-for="ResourceId" />
+
+    @if (Model.FreeTimeSlots != null && Model.FreeTimeSlots.Any())
+    {
+        <div class="mb-3">
+            <label class="form-label">Выберите свободный интервал:</label>
+            <select asp-for="SelectedSlot" class="form-control">
+                @foreach (var slot in Model.FreeTimeSlots)
+                {
+                    var value = $"{slot.StartTime}-{slot.EndTime}";
+                    <option value="@value">@slot.StartTime.ToString("HH:mm") – @slot.EndTime.ToString("HH:mm")</option>
+
+                }
+            </select>
+        </div>
+    }
+    <div class="mb-3">
+        <label asp-for="StartTime" class="form-label"></label>
+        <input class="form-control"
+               type="datetime-local"
+               id="StartTime"
+               name="StartTime"
+               value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
+        <span asp-validation-for="StartTime" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="EndTime" class="form-label"></label>
+        <input class="form-control"
+               type="datetime-local"
+               id="EndTime"
+               name="EndTime"
+               value="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm")" />
+        <span asp-validation-for="EndTime" class="text-danger"></span>
+    </div>
+
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Создать бронирование</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.slot-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const start = this.getAttribute('data-start');
+                const end = this.getAttribute('data-end');
+                document.querySelector('#StartTime').value = start;
+                document.querySelector('#EndTime').value = end;
+            });
+        });
+    </script>
+}

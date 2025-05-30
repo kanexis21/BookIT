@@ -1,0 +1,74 @@
+﻿@model ProfilePageViewModel
+
+<h2>Профиль</h2>
+
+<form asp-action="UpdateProfile" method="post">
+    <div class="form-group">
+        <label for="FirstName">Имя:</label>
+        <input type="text" name="FirstName" class="form-control" value="@Model.Profile.FirstName" />
+    </div>
+    <div class="form-group">
+        <label for="LastName">Фамилия:</label>
+        <input type="text" name="LastName" class="form-control" value="@Model.Profile.LastName" />
+    </div>
+    <div class="form-group">
+        <label for="Email">Email:</label>
+        <input type="email" name="Email" class="form-control" value="@Model.Profile.Email" />
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Сохранить</button>
+</form>
+
+<h3>Мои бронирования</h3>
+
+@if (!Model.Bookings.Any())
+{
+    <p>У вас нет бронирований.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ресурс</th>
+                <th>Начало</th>
+                <th>Конец</th>
+                <th>Статус</th>
+                <th>Описание</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in Model.Bookings)
+            {
+                <tr>
+                    @if(booking.ResourceId != null)
+                    {
+                        <td>@booking.ResourceName</td>
+                    }
+                    else
+                    {
+                        <td>@booking.RoomName</td>
+                    }
+                    <td>@booking.StartTime.ToString("g")</td>
+                    <td>@booking.EndTime.ToString("g")</td>
+                        @if (booking.Status == BookingStatus.Забронировано)
+                        {
+                           <td>Забронировано</td>
+                        }
+                        else
+                        {
+                            <td>Истёк</td>
+                        }
+
+                    <td>@booking.Description</td>
+                    <td>
+                        <form asp-action="CancelBooking" asp-controller="Profile" method="post" style="display:inline">
+                            <input type="hidden" name="bookingId" value="@booking.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm">Отменить</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

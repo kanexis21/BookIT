@@ -1,0 +1,60 @@
+﻿@using BookIT.WebApp.ViewModels.Catalog.Room
+@model PaginatedRoomViewModel
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                <a asp-route-tab="rooms" asp-route-sortBy="name" asp-route-page="1" class="@(Model.SortBy == "name" ? "fw-bold" : "")">Название</a>
+            </th>
+            <th>Местоположение</th>
+            <th>Подробнее</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var room in Model.Rooms)
+        {
+            <tr>
+                <td>@room.Name</td>
+                <td>@room.Location</td>
+                <td>
+                    <a class="btn btn-outline-info" asp-controller="Room" asp-action="Details" asp-route-id="@room.Id">Просмотр</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<nav>
+    <ul class="pagination">
+
+        @if (Model.CurrentPage > 1)
+        {
+            <li class="page-item">
+                <a class="page-link"
+                   asp-route-tab="rooms"
+                   asp-route-page="@(Model.CurrentPage - 1)"
+                   asp-route-sortBy="@Model.SortBy">← Назад</a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                <a class="page-link"
+                   asp-route-tab="rooms"
+                   asp-route-page="@i"
+                   asp-route-sortBy="@Model.SortBy">@i</a>
+            </li>
+        }
+
+        @if (Model.CurrentPage < Model.TotalPages)
+        {
+            <li class="page-item">
+                <a class="page-link"
+                   asp-route-tab="rooms"
+                   asp-route-page="@(Model.CurrentPage + 1)"
+                   asp-route-sortBy="@Model.SortBy">Вперёд →</a>
+            </li>
+        }
+    </ul>
+</nav>

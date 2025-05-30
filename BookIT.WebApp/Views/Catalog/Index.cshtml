@@ -1,0 +1,16 @@
+﻿@using BookIT.WebApp.ViewModels.Catalog
+@model CatalogPageViewModel
+
+<div class="btn-group mb-3">
+    <a asp-controller="Catalog" asp-action="Index" asp-route-tab="resources" class="btn btn-outline-primary @(Model.ActiveTab == "resources" ? "active" : "")">Ресурсы</a>
+    <a asp-controller="Catalog" asp-action="Index" asp-route-tab="rooms" class="btn btn-outline-primary @(Model.ActiveTab == "rooms" ? "active" : "")">Аудитории</a>
+</div>
+
+@if (Model.ActiveTab == "resources")
+{
+    @await Html.PartialAsync("_ResourceCatalogPartial", Model.Resources)
+}
+else if (Model.ActiveTab == "rooms")
+{
+    @await Html.PartialAsync("_RoomCatalogPartial", Model.Rooms)
+}

@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BookIT</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/BookIT.WebApp.styles.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">BookIT</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item"><a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Главная</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-controller="Profile" asp-action="Index">Профиль</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy">Приватность</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-controller="Catalog" asp-action="Index">Каталог</a></li>
+                    </ul>
+                </div>
+                <form asp-action="Logout" asp-controller="Home" method="post">
+                    <button type="submit" class="btn btn-link">Выйти</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow-1">
+        <div class="container">
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="border-top footer text-muted mt-auto py-3">
+        <div class="container">
+            &copy; 2025 - BookIT - <a asp-controller="Home" asp-action="Privacy">Политика Приватности</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const userId = "@User.FindFirst("sub")?.Value";         
+        const userName = "@User.Identity?.Name";             
+        const role = "@User.FindFirst("role")?.Value";
+        const targetUserId = "@ViewBag.TargetUserId";
+
+        async function loadMessages() {
+            const res = await fetch(`https://localhost:7099/support/api/chat/messages?user1=${userId}&user2=${targetUserId}`);
+            const messages = await res.json();
+
+            const area = document.getElementById("chatArea");
+            area.innerHTML = "";
+            messages.forEach(m => {
+                area.innerHTML += `<div><strong>${m.userName}:</strong> ${m.message}</div>`;
+            });
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById("messageInput").value;
+            const payload = {
+                userIdFrom: userId,
+                userIdTo: targetUserId,
+                userName: userName,
+                message: message,
+                role: role
+            };
+
+            await fetch("https://localhost:7099/support/api/chat/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById("messageInput").value = "";
+            await loadMessages(); 
+        }
+
+        loadMessages();
+    </script>
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

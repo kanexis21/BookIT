@@ -1,0 +1,25 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Добро пожаловать";
+    var userName = User.Identity.IsAuthenticated ? User.Identity.Name : "Гость";
+}
+
+<div class="text-center mt-5">
+    <h1 class="display-4">Добро пожаловать @userName!</h1>
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <p class="lead mt-3">Вы вошли в систему и можете:</p>
+        <ul class="list-unstyled">
+            <li>📅 Просматривать доступные помещения и оборудование</li>
+            <li>🔧 Бронировать ресурсы под задачи</li>
+            <li>🧑‍💼 Управлять своим профилем</li>
+        </ul>
+        <a class="btn btn-primary mt-4" asp-controller="Catalog" asp-action="Index">Перейти к каталогу</a>
+    }
+</div>

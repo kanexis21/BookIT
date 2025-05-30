@@ -1,0 +1,17 @@
+﻿@using BookIT.WebApp.ViewModels.Catalog.Room
+@model RoomViewModel
+
+<h2>@Model.Name</h2>
+<p>@Model.Description</p>
+<p><b>Местоположение:</b> @Model.Location</p>
+
+<h4>Фотография:</h4>
+<div class="col-md-3 mb-3">
+    <img src="/uploads/room_photo_1.jpg" alt="Фото аудитории" style="width: 300px;" />
+</div>
+<a class="btn btn-primary"
+   asp-controller="Booking"
+   asp-action="CreateWithRoom"
+   asp-route-roomId="@Model.Id">
+    Забронировать
+</a>

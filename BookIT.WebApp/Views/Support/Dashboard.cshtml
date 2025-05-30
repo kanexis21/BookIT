@@ -1,0 +1,68 @@
+﻿@model List<BookingViewModel>
+
+@{
+    var resources = Model.Select(b => b.ResourceName).Distinct().ToList();
+    var rooms = Model.Select(b => b.RoomName).Distinct().ToList();
+    var startHour = 11;
+    var endHour = 21;
+}
+
+<style>
+    .timeline-grid {
+        display: grid;
+        grid-template-columns: 150px repeat( @(endHour - startHour), 1fr);
+        border: 1px solid #ccc;
+    }
+
+    .timeline-header, .timeline-cell {
+        border: 1px solid #ddd;
+        padding: 4px;
+        text-align: center;
+    }
+
+    .booking-bar {
+        position: absolute;
+        height: 30px;
+        background-color: #007bff;
+        color: white;
+        text-align: center;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+
+    .timeline-row {
+        position: relative;
+        display: contents;
+    }
+</style>
+
+<h3>График бронирований (по часам)</h3>
+
+<div class="timeline-grid">
+    <div class="timeline-header">Оборудование</div>
+    @for (int hour = startHour; hour < endHour; hour++)
+    {
+        <div class="timeline-header">@($"{hour}:00")</div>
+    }
+
+    @foreach (var resource in resources)
+    {
+        <div class="timeline-cell fw-bold bg-light">@resource</div>
+
+        @for (int hour = startHour; hour < endHour; hour++)
+        {
+            <div class="timeline-cell"></div>
+        }
+
+        var bookings = Model.Where(b => b.ResourceName == resource);
+        foreach (var booking in bookings)
+        {
+            var left = (booking.StartTime.Hour + booking.StartTime.Minute / 60.0 - startHour) / (endHour - startHour) * 100;
+            var width = (booking.EndTime - booking.StartTime).TotalHours / (endHour - startHour) * 100;
+            <div class="booking-bar"
+                 style="top: calc(@(resources.IndexOf(resource)) * 32px); left: @($"{left}%"); width: @($"{width}%");">
+                @booking.StartTime.ToString("HH:mm") - @booking.EndTime.ToString("HH:mm")
+            </div>
+        }
+    }
+</div>

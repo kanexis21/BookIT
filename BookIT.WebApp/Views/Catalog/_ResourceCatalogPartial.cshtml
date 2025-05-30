@@ -1,0 +1,67 @@
+﻿@using BookIT.WebApp.ViewModels.Catalog.Resource
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                <a asp-route-sortBy="name"
+                   asp-route-page="1"
+                   class="@(Model.SortBy == "name" ? "fw-bold" : "")">Название</a>
+            </th>
+            <th>
+                <a asp-route-sortBy="status"
+                   asp-route-page="1"
+                   class="@(Model.SortBy == "status" ? "fw-bold" : "")">Статус</a>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var resource in Model.Resources)
+        {
+            <tr>
+                <td>@resource.Name</td>
+                <td>
+                    <a class="btn btn-primary"
+                       asp-controller="Booking"
+                       asp-action="CreateWithResource"
+                       asp-route-resourceId="@resource.Id">
+                        Забронировать
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<nav>
+    <ul class="pagination">
+        @if (Model.CurrentPage > 1)
+        {
+            <li class="page-item">
+                <a class="page-link"
+                   asp-route-tab= "resources"
+                   asp-route-page="@(Model.CurrentPage - 1)"
+                   asp-route-sortBy="@Model.SortBy">← Назад</a>
+            </li>
+        }
+
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                <a class="page-link"
+                   asp-route-tab="resources"
+                   asp-route-page="@i"
+                   asp-route-sortBy="@Model.SortBy">@i</a>
+            </li>
+        }
+
+        @if (Model.CurrentPage < Model.TotalPages)
+        {
+            <li class="page-item">
+                <a class="page-link"
+                   asp-route-tab="resources"
+                   asp-route-page="@(Model.CurrentPage + 1)"
+                   asp-route-sortBy="@Model.SortBy">Вперёд →</a>
+            </li>
+        }
+    </ul>
+</nav>
