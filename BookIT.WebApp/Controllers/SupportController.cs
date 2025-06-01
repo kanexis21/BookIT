@@ -1,39 +1,42 @@
 ﻿using BookIT.WebApp.Application.Services.Interfaces;
-using BookIT.WebApp.ViewModels;
+using BookIT.WebApp.ViewModels.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace BookIT.WebApp.Controllers
 {
-    [Route("api/{controller}")]
+    [Authorize(Roles = "support")]
+    [Route ("/support")]
     public class SupportController : Controller
     {
-        private readonly IHttpClientFactory _clientFactory;
         private readonly IBookingService _bookingService;
+        private readonly ISupportService _supportService;
 
-        public SupportController(IHttpClientFactory clientFactory, IBookingService bookingService)
+        public SupportController(IBookingService bookingService, ISupportService supportService)
         {
-            _clientFactory = clientFactory;
             _bookingService = bookingService;
+            _supportService = supportService;
         }
 
         [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
-            var client = _clientFactory.CreateClient("ApiGateway");
-
-            var response = await client.GetAsync("booking/api/booking");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorText = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, $"Ошибка при получении данных: {response.StatusCode} — {errorText}");
-            }
-            var bookings = await _bookingService.GetUserBookingsAsync();
-
-            var content = await response.Content.ReadFromJsonAsync<List<BookingViewModel>>();
-            return View(content);
+            var bookings = await _bookingService.GetAllBookingsAsync();
+            return View(bookings);
+        }
+        [HttpGet("chats")]
+        public async Task<IActionResult> GetChats()
+        {
+            var chats = await _supportService.GetActiveSupportChatsAsync();
+            return Json(chats);
         }
 
+        [HttpGet("messages/{userId}")]
+        public async Task<IActionResult> GetMessages(string userId)
+        {
+            var messages = await _supportService.GetMessagesWithUserAsync(userId);
+            return Json(messages);
+        }
     }
 }

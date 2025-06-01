@@ -5,6 +5,7 @@ namespace BookIT.WebApp.Application.Services.Interfaces
     public interface IBookingService
     {
         Task<List<BookingViewModel>> GetUserBookingsAsync(string userId);
+        Task<List<BookingViewModel>> GetAllBookingsAsync();
     }
 
 }

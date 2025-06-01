@@ -1,9 +1,9 @@
 ﻿using BookIT.WebApp.Application.Services;
 using BookIT.WebApp.Application.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace BookIT.WebApp.Application
@@ -12,6 +12,7 @@ namespace BookIT.WebApp.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -21,9 +22,12 @@ namespace BookIT.WebApp.Application
             {
                 options.LoginPath = "/Account/Login";
                 options.LogoutPath = "/Account/Logout";
+                options.ExpireTimeSpan = TimeSpan.FromHours(1);
+                options.SlidingExpiration = true;
             })
             .AddOpenIdConnect(options =>
             {
+                options.ClaimActions.MapJsonKey("role", "role", "string");
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.Authority = "https://localhost:5005";
                 options.ClientId = "mvc-client";
@@ -76,6 +80,7 @@ namespace BookIT.WebApp.Application
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IBookingService, BookingService>();
+            services.AddScoped<ISupportService, SupportServiceClient>();
 
 
             services.AddHttpContextAccessor();

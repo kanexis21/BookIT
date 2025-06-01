@@ -1,4 +1,5 @@
 ﻿using BookIT.WebApp.Application;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,7 @@ app.UseCors("CorsPolicy");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Remove("role");
 app.UseRouting();
 
 app.UseAuthentication();

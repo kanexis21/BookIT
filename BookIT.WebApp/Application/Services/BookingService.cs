@@ -15,6 +15,68 @@ namespace BookIT.WebApp.Application.Services
         {
             _httpClientFactory = httpClientFactory;
         }
+        public async Task<List<BookingViewModel>> GetAllBookingsAsync()
+        {
+            var client = _httpClientFactory.CreateClient("ApiGateway");
+
+            var response = await client.GetAsync("booking/api/booking");
+            if (!response.IsSuccessStatusCode)
+                return new();
+
+            var bookingsJson = await response.Content.ReadAsStringAsync();
+            var bookings = JsonConvert.DeserializeObject<List<BookingViewModel>>(bookingsJson);
+
+            var resourceIds = bookings
+                .Where(b => b.ResourceId.HasValue)
+                .Select(b => b.ResourceId!.Value)
+                .Distinct()
+                .ToList();
+
+            var roomIds = bookings
+                .Where(b => b.RoomId.HasValue)
+                .Select(b => b.RoomId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (resourceIds.Any())
+            {
+                var requestContent = new StringContent(JsonConvert.SerializeObject(resourceIds), Encoding.UTF8, "application/json");
+                var resourceResponse = await client.PostAsync("resource/api/resource/by-ids", requestContent);
+
+                if (resourceResponse.IsSuccessStatusCode)
+                {
+                    var resourceJson = await resourceResponse.Content.ReadAsStringAsync();
+                    var resources = JsonConvert.DeserializeObject<List<ResourceShortViewModel>>(resourceJson);
+
+                    foreach (var booking in bookings)
+                    {
+                        if (booking.ResourceId.HasValue)
+                            booking.ResourceName = resources.FirstOrDefault(r => r.Id == booking.ResourceId)?.Name ?? "Неизвестный ресурс";
+                    }
+                }
+            }
+
+            if (roomIds.Any())
+            {
+                var requestContent = new StringContent(JsonConvert.SerializeObject(roomIds), Encoding.UTF8, "application/json");
+                var roomResponse = await client.PostAsync("room/api/room/by-ids", requestContent);
+
+                if (roomResponse.IsSuccessStatusCode)
+                {
+                    var roomJson = await roomResponse.Content.ReadAsStringAsync();
+                    var rooms = JsonConvert.DeserializeObject<List<RoomShortViewModel>>(roomJson);
+
+                    foreach (var booking in bookings)
+                    {
+                        if (booking.RoomId.HasValue)
+                            booking.RoomName = rooms.FirstOrDefault(r => r.Id == booking.RoomId)?.Name ?? "Неизвестное помещение";
+                    }
+                }
+            }
+
+            return bookings;
+        }
+
 
         public async Task<List<BookingViewModel>> GetUserBookingsAsync(string userId)
         {

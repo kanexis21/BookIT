@@ -1,68 +1,208 @@
 ﻿@model List<BookingViewModel>
 
 @{
-    var resources = Model.Select(b => b.ResourceName).Distinct().ToList();
-    var rooms = Model.Select(b => b.RoomName).Distinct().ToList();
-    var startHour = 11;
-    var endHour = 21;
-}
+    var resources = Model
+        .Where(b => !string.IsNullOrEmpty(b.ResourceName))
+        .Select(b => b.ResourceName)
+        .Distinct()
+        .ToList();
 
+    var rooms = Model
+        .Where(b => !string.IsNullOrEmpty(b.RoomName))
+        .Select(b => b.RoomName)
+        .Distinct()
+        .ToList();
+
+    var startHour = 11;
+    var endHour = 22;
+    var totalHours = endHour - startHour;
+    string? showTime =  "";
+}
 <style>
     .timeline-grid {
         display: grid;
-        grid-template-columns: 150px repeat( @(endHour - startHour), 1fr);
+        grid-template-columns: 150px repeat( @(totalHours), 1fr);
         border: 1px solid #ccc;
     }
 
-    .timeline-header, .timeline-cell {
+    .timeline-header {
+        background-color: #f0f0f0;
+        font-weight: bold;
         border: 1px solid #ddd;
-        padding: 4px;
+        padding: 6px;
         text-align: center;
+    }
+
+    .timeline-cell {
+        border: 1px solid #eee;
+        height: 32px;
+        position: relative;
     }
 
     .booking-bar {
-        position: absolute;
-        height: 30px;
         background-color: #007bff;
         color: white;
-        text-align: center;
+        font-size: 11px;
         border-radius: 4px;
-        font-size: 12px;
-    }
-
-    .timeline-row {
-        position: relative;
-        display: contents;
+        padding: 2px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
     }
 </style>
 
-<h3>График бронирований (по часам)</h3>
+<h3>График бронирований по оборудованию</h3>
 
 <div class="timeline-grid">
-    <div class="timeline-header">Оборудование</div>
+    <!-- Header row -->
+    <div class="timeline-header">Ресурс</div>
     @for (int hour = startHour; hour < endHour; hour++)
     {
         <div class="timeline-header">@($"{hour}:00")</div>
     }
 
+    <!-- Rows per resource -->
     @foreach (var resource in resources)
     {
         <div class="timeline-cell fw-bold bg-light">@resource</div>
 
         @for (int hour = startHour; hour < endHour; hour++)
         {
-            <div class="timeline-cell"></div>
-        }
+            <div class="timeline-cell">
+                @{
+                    var booking = Model.FirstOrDefault(b =>
+                    b.ResourceName == resource &&
+                    b.StartTime.Hour <= hour &&
+                    b.EndTime.Hour > hour);
 
-        var bookings = Model.Where(b => b.ResourceName == resource);
-        foreach (var booking in bookings)
+                    if (booking != null)
+                    {
+                        var start = booking.StartTime;
+                        var end = booking.EndTime;
+                        showTime = start.ToString("HH:mm") + " - " + end.ToString("HH:mm");
+                    }
+                }
+
+                @if (booking != null && booking.StartTime.Hour == hour)
+                {
+                    var span = Math.Ceiling((booking.EndTime - booking.StartTime).TotalHours);
+                    <div class="booking-bar" style="grid-column: span @span">@showTime</div>
+                }
+            </div>
+        }
+    }
+    <!-- Rows per resource -->
+    @foreach (var room in rooms)
+    {
+        <div class="timeline-cell fw-bold bg-light">@room</div>
+
+        @for (int hour = startHour; hour < endHour; hour++)
         {
-            var left = (booking.StartTime.Hour + booking.StartTime.Minute / 60.0 - startHour) / (endHour - startHour) * 100;
-            var width = (booking.EndTime - booking.StartTime).TotalHours / (endHour - startHour) * 100;
-            <div class="booking-bar"
-                 style="top: calc(@(resources.IndexOf(resource)) * 32px); left: @($"{left}%"); width: @($"{width}%");">
-                @booking.StartTime.ToString("HH:mm") - @booking.EndTime.ToString("HH:mm")
+            <div class="timeline-cell">
+                @{
+                    var booking = Model.FirstOrDefault(b =>
+                    b.RoomName == room &&
+                    b.StartTime.Hour <= hour &&
+                    b.EndTime.Hour > hour);
+
+                    if (booking != null)
+                    {
+                        var start = booking.StartTime;
+                        var end = booking.EndTime;
+                        showTime = start.ToString("HH:mm") + " - " + end.ToString("HH:mm");
+                    }
+                }
+
+                @if (booking != null && booking.StartTime.Hour == hour)
+                {
+                    var span = Math.Ceiling((booking.EndTime - booking.StartTime).TotalHours);
+                    <div class="booking-bar" style="grid-column: span @span">@showTime</div>
+                }
             </div>
         }
     }
 </div>
+<div class="row">
+    <div class="col-3 border-end">
+        <h5>Активные чаты</h5>
+        <ul id="chatList" class="list-group"></ul>
+    </div>
+    <div class="col-9">
+        <div id="chatHeader"><h5>Чат с пользователем</h5></div>
+        <div id="chatMessages" class="border p-2" style="height:300px; overflow-y:auto;"></div>
+        <input id="chatInput" class="form-control mt-2" placeholder="Введите сообщение..." />
+        <button id="sendBtn" class="btn btn-primary mt-2">Отправить</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7117/supporthub") // URL микросервиса, где работает хаб
+            .build();
+
+        connection.on("ReceiveMessage", function(message) {
+            console.log("Received message:", message);
+            loadMessages(message.senderId);
+            refreshChats();
+            showNotification(`Новое сообщение от ${message.senderName}: ${message.text}`);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            refreshChats();
+        });
+
+        connection.start().catch(err => console.error(err));
+
+        async function refreshChats() {
+            const response = await fetch('/support/chats');
+            const chats = await response.json();
+            renderChats(chats);
+        }
+
+        async function loadMessages(userId) {
+            const response = await fetch(`/support/messages/${userId}`);
+            const messages = await response.json();
+            renderMessages(messages);
+        }
+
+        function renderChats(chats) {
+            const chatList = document.getElementById('chatList');
+            chatList.innerHTML = '';
+            chats.forEach(chat => {
+                const li = document.createElement('li');
+                li.className = "list-group-item list-group-item-action";
+                li.textContent = chat.name;
+                li.onclick = () => openChat(chat.id);
+                chatList.appendChild(li);
+            });
+        }
+
+        function renderMessages(messages) {
+            const chatBox = document.getElementById('chatMessages');
+            chatBox.innerHTML = '';
+            messages.forEach(m => {
+                const div = document.createElement('div');
+                div.textContent = `${m.senderName ?? 'Пользователь'}: ${m.text}`;
+                chatBox.appendChild(div);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showNotification(text) {
+            const n = document.createElement('div');
+            n.textContent = text;
+            n.className = "toast";
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 4000);
+        }
+
+        let currentChatUserId = null;
+
+        function openChat(userId) {
+            currentChatUserId = userId;
+            loadMessages(userId);
+        }
+    </script>
+}

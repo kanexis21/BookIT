@@ -33,6 +33,18 @@
 
     <main class="flex-grow-1">
         <div class="container">
+            <div id="support-chat-toggle" onclick="toggleChat()" style="position: fixed; bottom: 20px; right: 20px; background-color: #007bff; color: white; padding: 10px 15px; border-radius: 50px; cursor: pointer; z-index: 1001;">
+                💬 Чат
+            </div>
+
+            <div id="support-chat-box" style="display: none; position: fixed; bottom: 80px; right: 20px; width: 300px; height: 400px; background-color: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); z-index: 1000; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="background-color: #007bff; color: white; padding: 10px; text-align: center;">Поддержка</div>
+                <div id="chat-messages" style="flex: 1; padding: 10px; overflow-y: auto; font-size: 14px;"></div>
+                <div style="padding: 10px; border-top: 1px solid #ccc;">
+                    <input id="chat-input" type="text" placeholder="Напишите сообщение..." style="width: 100%; padding: 5px;" onkeydown="if(event.key === 'Enter') sendMessage()" />
+                </div>
+            </div>
+
             @RenderBody()
         </div>
     </main>
@@ -49,43 +61,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script>
-        const userId = "@User.FindFirst("sub")?.Value";         
-        const userName = "@User.Identity?.Name";             
-        const role = "@User.FindFirst("role")?.Value";
-        const targetUserId = "@ViewBag.TargetUserId";
+        const currentUserId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+    </script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7117/supporthub", {
+                accessTokenFactory: () => localStorage.getItem("access_token")
+            })
+            .build();
 
-        async function loadMessages() {
-            const res = await fetch(`https://localhost:7099/support/api/chat/messages?user1=${userId}&user2=${targetUserId}`);
-            const messages = await res.json();
+        connection.on("ReceiveMessage", (message) => {
+            const chat = document.getElementById("chat-messages");
+            chat.innerHTML += `<div><b>${message.senderName ?? "Поддержка"}:</b> ${message.content}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+            console.log("📨 Получено сообщение:", message);
+        });
 
-            const area = document.getElementById("chatArea");
-            area.innerHTML = "";
-            messages.forEach(m => {
-                area.innerHTML += `<div><strong>${m.userName}:</strong> ${m.message}</div>`;
-            });
+        async function startConnection() {
+            try {
+                await connection.start();
+                console.log("SignalR connected");
+            } catch (err) {
+                console.error("Ошибка подключения SignalR:", err);
+                setTimeout(startConnection, 3000);
+            }
+        }
+
+        function toggleChat() {
+            const chatBox = document.getElementById("support-chat-box");
+            chatBox.style.display = chatBox.style.display === "none" ? "flex" : "none";
         }
 
         async function sendMessage() {
-            const message = document.getElementById("messageInput").value;
-            const payload = {
-                userIdFrom: userId,
-                userIdTo: targetUserId,
-                userName: userName,
-                message: message,
-                role: role
-            };
+            const input = document.getElementById("chat-input");
+            const message = input.value.trim();
+            if (!message) return;
 
-            await fetch("https://localhost:7099/support/api/chat/send", {
+            const senderId = currentUserId; // Определи currentUserId
+
+            const response = await fetch("/messages/send", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    senderId: senderId,
+                    receiverId: "f0b910ff-7740-4361-b700-4f6038cac663", // тестовый получатель
+                    text: message
+                })
             });
 
-            document.getElementById("messageInput").value = "";
-            await loadMessages(); 
+            if (response.ok) {
+                // Отображаем сообщение сразу в чате от себя
+                const chat = document.getElementById("chat-messages");
+                chat.innerHTML += `<div><b>Вы:</b> ${message}</div>`;
+                chat.scrollTop = chat.scrollHeight;
+                input.value = "";
+            } else {
+                alert("Ошибка отправки сообщения");
+            }
         }
 
-        loadMessages();
+        startConnection();
+
     </script>
 
 

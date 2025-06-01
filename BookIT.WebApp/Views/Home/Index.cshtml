@@ -14,6 +14,14 @@
 
     @if (User.Identity.IsAuthenticated)
     {
+        <div>
+            Вы вошли как: @User.Identity.Name <br />
+            Роли: @string.Join(", ", User.Claims.Where(c => c.Type == "role").Select(c => c.Value))
+        </div>
+    }
+
+    @if (User.Identity.IsAuthenticated)
+    {
         <p class="lead mt-3">Вы вошли в систему и можете:</p>
         <ul class="list-unstyled">
             <li>📅 Просматривать доступные помещения и оборудование</li>
